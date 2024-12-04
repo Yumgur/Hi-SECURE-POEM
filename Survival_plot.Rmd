@@ -1,0 +1,605 @@
+---
+title: "SurvivalAnalysisScript.R"
+output: html_notebook
+---
+
+```{r}
+library(readxl)
+library(survival)
+library(survminer)
+library(dplyr)
+library(ComplexHeatmap)
+library(circlize)
+#palette 
+dred='#C72228'
+dorange='#F98F34'
+dblue='#0C4E9B'
+dgreen='#6BBC46'
+dmred='#C72026'
+dmorange='#F98E31'
+dmblue='#0B4E9B'
+dmgreen='#69BC42'
+lred='#F5867F'
+lorange='#FFBC80'
+lblue='#6B98C4'
+lgreen='#B4DEA2'
+two_pal=c(dblue,dred)
+three_pal=c(dred,dorange,dblue)
+
+#Figure 1E
+data <-read.table(".\\data\\Hi-SECURE_construction\\Seracare_Standards_SiteAF.xls",sep="\t",header=T,row.names=1)
+group<-read.table(".\\data\\Hi-SECURE_construction\\Seracare_Standards_Group.xls",sep="\t",head=T)
+data1 <- data[,1:5]
+data2 <- data[,6:9]
+data3 <- data[,10:13]
+data4 <- data[,14:18]
+data5 <- data[,19:23]
+group1 <- group[group$Type=="ctDNA-0%",]
+group2 <- group[group$Type=="ctDNA20ng-0.005%",]
+group3 <- group[group$Type=="ctDNA40ng-0.005%",]
+group4 <- group[group$Type=="ctDNA-0.05%",]
+group5 <- group[group$Type=="ctDNA-0.5%",]
+df1=data.frame(ctDNA=group1$Type)
+rownames(df1)=group1$Sample
+ha1 = HeatmapAnnotation(df = df1, col = list(ctDNA = c("ctDNA-0%" = "#6B98C4","ctDNA20ng-0.005%" = "#C72228","ctDNA40ng-0.005%" = "#0C4E9B", "ctDNA-0.05%" = "#F98F34","ctDNA-0.5%" = "#6BBC46")),show_legend =TRUE,show_annotation_name = FALSE,annotation_height = 0.2)
+df2=data.frame(ctDNA=group2$Type)
+rownames(df2)=group2$Sample
+ha2 = HeatmapAnnotation(df = df2, col = list(ctDNA = c("ctDNA-0%" = "#6B98C4","ctDNA20ng-0.005%" = "#C72228","ctDNA40ng-0.005%" = "#0C4E9B", "ctDNA-0.05%" = "#F98F34","ctDNA-0.5%" = "#6BBC46")),show_legend =TRUE,show_annotation_name = FALSE,annotation_height = 0.2)
+df3=data.frame(ctDNA=group3$Type)
+rownames(df3)=group3$Sample
+ha3 = HeatmapAnnotation(df = df3, col = list(ctDNA = c("ctDNA-0%" = "#6B98C4","ctDNA20ng-0.005%" = "#C72228","ctDNA40ng-0.005%" = "#0C4E9B", "ctDNA-0.05%" = "#F98F34","ctDNA-0.5%" = "#6BBC46")),show_legend =TRUE,show_annotation_name = FALSE,annotation_height = 0.2)
+df4=data.frame(ctDNA=group4$Type)
+rownames(df4)=group4$Sample
+ha4 = HeatmapAnnotation(df = df4, col = list(ctDNA = c("ctDNA-0%" = "#6B98C4","ctDNA20ng-0.005%" = "#C72228","ctDNA40ng-0.005%" = "#0C4E9B", "ctDNA-0.05%" = "#F98F34","ctDNA-0.5%" = "#6BBC46")),show_legend =TRUE,show_annotation_name = FALSE,annotation_height = 0.2)
+df5=data.frame(ctDNA=group5$Type)
+rownames(df5)=group5$Sample
+ha5 = HeatmapAnnotation(df = df5, col = list(ctDNA = c("ctDNA-0%" = "#6B98C4","ctDNA20ng-0.005%" = "#C72228","ctDNA40ng-0.005%" = "#0C4E9B", "ctDNA-0.05%" = "#F98F34","ctDNA-0.5%" = "#6BBC46")),show_legend =TRUE,annotation_height = 0.2)
+col_fun = colorRamp2(c(0,0.001, 0.05, 0.5), c("white", "#F98F34","#F5867F", "#C72228"),transparency = 0.3)
+ht1 = Heatmap(data1, show_row_names = FALSE, show_column_names = TRUE,top_annotation = ha1, show_heatmap_legend=FALSE,col= col_fun, column_title ="", show_row_dend=TRUE,row_dend_side ="left",cluster_rows = TRUE,cluster_columns = FALSE)
+ht2 = Heatmap(data2, show_row_names = FALSE, show_column_names = TRUE,top_annotation = ha2, show_heatmap_legend=FALSE,col= col_fun, column_title ="", show_row_dend=F,cluster_columns = FALSE)
+ht3 = Heatmap(data3, show_row_names = FALSE, show_column_names = TRUE,top_annotation = ha3, show_heatmap_legend=FALSE,col= col_fun, column_title ="", show_row_dend=F,cluster_columns = FALSE)
+ht4 = Heatmap(data4, show_row_names = FALSE, show_column_names = TRUE,top_annotation = ha4, show_heatmap_legend=FALSE,col= col_fun, column_title ="", show_row_dend=F,cluster_columns = FALSE)
+ht5 = Heatmap(data5, show_row_names = TRUE, show_column_names = TRUE,top_annotation = ha5,row_names_gp = gpar(fontsize = 10),col= col_fun,name = " ", column_title ="", show_row_dend=F, heatmap_legend_param = list(color_bar = "continuous"),cluster_columns = FALSE)
+#pdf(file="Seracare.heatmap.pdf",width=15,height=12)
+draw(ht1 + ht2 + ht3 + ht4+ht5,gap = unit(c(1.5,1.5,1.5,1.5,0), "mm"))
+#dev.off()
+
+```
+```{r}
+#Figure 3F
+data <- read_excel(".\\data\\Hi-SECURE_construction\\\\Clinical.xlsx",sheet = 1) %>% filter(PatientID!= "M151") 
+data_luad=data %>% filter(Subtype == "LUAD") %>% mutate(TNM_Shedder = paste0("TNM=",TNM, ",Shedder=", Shedder))
+fontsize<-12
+
+#pdf(".\\Figure\\Hi_secure_Pre.pdf",width = 5,height = 5,onefile = FALSE)
+dat <- data %>% select(PatientID,RFS.status,RFS,Hi_secure_Pre_operation)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+plot <- ggsurvplot(fit, data = survival_dat, 
+                   conf.int = F, 
+                   linetype = c(1,1),
+                   palette = two_pal, 
+                   legend.title = "HI-Secure Pre-operation",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text= F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+```
+```{r}
+#Figure 3G
+#pdf(paste("Luad_betweenMethod_pre.pdf",sep=""),width = 5,height = 6,onefile = FALSE)
+dat <- data_luad %>% select(PatientID,RFS.status,RFS,Pre_operation)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+level3_num = levels(group)[3]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   linetype = c(1,1,1),
+                   palette =c("#C72228","#F98F34","#0C4F9B"), 
+                   legend.title = "LUAD Pre-operation",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num,level3_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+
+```
+
+```{r}
+#Figure 3H
+data <- read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)%>% filter(PatientID!= "M151" & Subtype=='LUAD') %>% mutate(shedder_egfr = paste0(Shedder, EGFR))
+data_I<-data%>% filter(Stage== "I" )    
+data_III<-data%>% filter(Stage_actual== "III" )              
+data1 <- data_I
+data1 <- as.data.frame(data1)
+dat <- data1 %>% select(PatientID,RFS.status,RFS,shedder_egfr)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = paste0(levels(group)[1], "(", length(group[group == levels(group)[1]]), ")")
+level2_num = paste0(levels(group)[2], "(", length(group[group == levels(group)[2]]), ")")
+level3_num = paste0(levels(group)[3], "(", length(group[group == levels(group)[3]]), ")")
+level4_num = paste0(levels(group)[4], "(", length(group[group == levels(group)[4]]), ")")
+
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+#pdf("LUAD_Shedder_EGFR_I.pdf",width = 6,height =7.5,onefile = FALSE)
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   linetype = c(2,1,2,1),
+                   palette = c(dblue,dmblue,dmred,dred), 
+                   legend.title = "LUAD TNM-I",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num,level3_num,level4_num),
+  )
+print(plot)
+#dev.off()
+```
+
+
+```{r}
+#Figure 4A
+data <- read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)%>% filter(Therapy!= "Yes")
+#pdf("Hi_secure_post1M.pdf",width = 5,height = 5,onefile = FALSE)
+dat <- data %>% select(PatientID,RFS.status,RFS,Hi_secure_Post1M)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   linetype = c(1,1),
+                   palette = two_pal, 
+                   legend.title = "HI-Secure Post1M",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                 sep = "\n"))
+print(plot)
+dev.off()
+
+```
+```{r}
+#Figure 4C
+data1 <-read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1) %>% filter(PatientID != "M151") %>% mutate(Pre_Post = paste0(Hi_secure_Pre_operation, "_", Hi_secure_Post1M))
+data1 <- as.data.frame(data1)
+
+dat <- data1 %>% select(PatientID,RFS.status,RFS,pre_post)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+
+my.surv = Surv(dat$time, dat$state)
+
+group = as.factor(dat[,4])
+level1_num = paste0(levels(group)[1], "(", length(group[group == levels(group)[1]]), ")")
+level2_num = paste0(levels(group)[2], "(", length(group[group == levels(group)[2]]), ")")
+level3_num = paste0(levels(group)[3], "(", length(group[group == levels(group)[3]]), ")")
+
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+CI <- paste("95% CI: ", paste(round(low95,2), round(up95,2), sep = " - "), sep = "")
+
+#pdf("Pre_post1m_threetype.pdf",width = 5,height =6.5,onefile = FALSE)
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   #censor = F, 
+                   linetype = c(1,1,1),
+                   palette = c(dred,dblue,dorange), 
+                   legend.title = "HI-Secure Pre",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num,level3_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                 sep = "\n"))
+print(plot)
+#dev.off()
+```
+```{r}
+data_pb <- read_excel(".\\data\\POEM\\TNM_PB.xlsx",sheet = 1) %>%  filter(PatientID != "M151") 
+data1 <- data_pb
+data1 <- as.data.frame(data1)
+dat <- data1 %>% select(PatientID,RFS.status,RFS,stage)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+
+level1_num = paste0(levels(group)[1], "(", length(group[group == levels(group)[1]]), ")")
+level2_num = paste0(levels(group)[2], "(", length(group[group == levels(group)[2]]), ")")
+level3_num = paste0(levels(group)[3], "(", length(group[group == levels(group)[3]]), ")")
+level4_num = paste0(levels(group)[4], "(", length(group[group == levels(group)[4]]), ")")
+level5_num = paste0(levels(group)[5], "(", length(group[group == levels(group)[5]]), ")")
+level6_num = paste0(levels(group)[6], "(", length(group[group == levels(group)[6]]), ")")
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+#pdf("TNM_VS_PB.pdf",width = 7,height =7.5,onefile = FALSE)
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   #censor = F, 
+                   linetype = c(1,1,1,3,3,3),
+                   palette = c(dblue,dorange,dred,dmblue,dmorange,dmred), 
+                   legend.title = "TNM vs. PB",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   #risk.table = T, ## 所有可用的value是TRUE, FALSE, 'absolute', 'percentage', 'nrisk_cumcensor', 'nrisk_cumevents' 
+                   #risk.table.y.text.col = T, ## risk table左侧是否用对应分层变量的颜色注释
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num,level3_num,level4_num,level5_num,level6_num))
+print(plot)
+#dev.off()
+```
+```{r}
+#Figure 4E
+data_pb <- read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1) 
+clinical <- read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1) %>% filter(PatientID != "M151")
+dat1<-data_pb%>%  filter(PB == "I")
+dat2<-data_pb%>%  filter(PB == "II_III")
+dat2 <- data_pb %>%
+  filter(PB == "II" | PB == "III")
+
+data1 <- dat1
+data1 <- as.data.frame(data1)
+dat1 <- data1 %>% select(PatientID,RFS.status,RFS,Therapy)
+dat1 <- as.data.frame(dat1)
+
+data2 <- dat2
+data2 <- as.data.frame(data2)
+dat2 <- data2 %>% select(PatientID,RFS.status,RFS,Therapy)
+dat2<- as.data.frame(dat2)
+
+bcMatched2<- read.csv(".\\data\\POEM\\Clinical_After_PSM.csv") 
+dat11=dat1%>%  filter(PatientID %in% bcMatched2$PatientID)
+dat<-dat11
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+#pdf("PB_I_therapy.pdf",width = 5,height =5,onefile = FALSE)
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   #censor = F, 
+                   linetype = c(1,1),
+                   palette = c(dorange,dgreen), 
+                   legend.title = "PB-I Therapy",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+```
+```{r}
+#Figure 4F
+dat22=dat2%>%  filter(PatientID %in% bcMatched2$PatientID)
+dat<-dat22
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+#pdf("PB_II_III_therapy.pdf",width = 5,height =5,onefile = FALSE)
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   linetype = c(1,1),
+                   palette = c(dorange,dgreen), 
+                   legend.title = "PB-II_III Therapy",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+```
+```{r}
+#Fiugre5A
+data <-read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)  %>% filter(Hi_secure_Landmark!= "")  %>% mutate(Subtype_landmark = paste0(Subtype, Hi_secure_Landmark),stage_landmark=paste0(Stage, Hi_secure_Landmark))
+data_ct<-data %>% filter(TherapyType== "CT" |TherapyType== "CT+ICI" |TherapyType== "CT+TKI" ) 
+data_luad=data %>% filter(Subtype == "LUAD") %>% mutate(TNM_Shedder = paste0("TNM=",TNM, ",Shedder=", Shedder))
+data_post1m_positive=data %>% filter(Hi_secure_Post1M == "Positive")
+data_post1m_negative=data %>% filter(Hi_secure_Post1M == "Negative")
+data_post1m_therapy=read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)  %>% filter(PatientID!= "M151") %>% mutate(post1M_therapy = paste0(Hi_secure_Post1M, Therapy))
+
+#pdf("Hi_secure_Landmark.pdf",width = 5,height = 5,onefile = FALSE)
+dat <- data %>% select(PatientID,RFS.status,RFS,Hi_secure_Landmark)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   linetype = c(1,1),
+                   palette = two_pal, 
+                   legend.title = "HI-Secure Landmark",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+```
+```{r}
+#Figure 5D
+data <- read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)  %>% filter(Hi_secure_Post1M!= "")  
+data_ct<-data %>% filter(TherapyType== "CT" |TherapyType== "CT+ICI" |TherapyType== "CT+TKI" ) 
+#pdf("CT_Post1M.pdf",width = 5,height = 6,onefile = FALSE)
+dat <- data_ct %>% select(PatientID,RFS.status,RFS,Hi_secure_Post1M)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   linetype = c(1,1),
+                   palette = two_pal, 
+                   legend.title = "Chemo Post1M",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+```
+
+
+```{r}
+#Figure 5E
+data <-read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)  %>% filter(Hi_secure_Landmark!= "")  
+data_ct<-data %>% filter(TherapyType== "CT" |TherapyType== "CT+ICI" |TherapyType== "CT+TKI" ) 
+#pdf("CT_Landmark.pdf",width = 5,height = 6,onefile = FALSE)
+dat <- data_ct %>% select(PatientID,RFS.status,RFS,Hi_secure_Landmark)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   #censor = F, 
+                   linetype = c(1,1),
+                   palette = two_pal, 
+                   legend.title = "Chemo Landmark",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+
+```
+
+
+```{r}
+
+#Figure 5F
+data <- read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)   %>% filter(Hi_secure_Longitudinal!= "")  
+data_ct<-data %>% filter(TherapyType== "CT" |TherapyType== "CT+ICI" |TherapyType== "CT+TKI" ) 
+#pdf("CT_Longitudinal.pdf",width = 5,height = 6,onefile = FALSE)
+dat <- data_ct %>% select(PatientID,RFS.status,RFS,Hi_secure_Longitudinal)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+p.val = 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
+HR = (data.survdiff$obs[2]/data.survdiff$exp[2])/(data.survdiff$obs[1]/data.survdiff$exp[1])
+up95 = exp(log(HR) + qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+low95 = exp(log(HR) - qnorm(0.975)*sqrt(1/data.survdiff$exp[2]+1/data.survdiff$exp[1]))
+HR <- paste("HR = ", round(HR,2),"[",round(low95,2),"-", round(up95,2) ,"]",sep = "")
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   #censor = F, 
+                   linetype = c(1,1),
+                   palette = two_pal, 
+                   legend.title = "Chemo Longitudinal",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level1_num,level2_num),
+                   pval = paste(pval = ifelse(p.val < 0.001,"p < 0.001",paste("p = ",round(p.val,3), sep = "")),
+                                HR,  sep = "\n"))
+print(plot)
+#dev.off()
+```
+```{r}
+#Figure 5H
+data <- read_excel(".\\data\\POEM\\Clinical.xlsx",sheet = 1)  %>% filter(Hi_secure_Landmark!= "" & Hi_secure_Post1M!="")  %>% mutate(post1m_landmark = paste0(Hi_secure_Post1M, Hi_secure_Landmark))
+data_ct<-data %>% filter(TherapyType== "CT" |TherapyType== "CT+ICI" |TherapyType== "CT+TKI" ) 
+data_ct$post1m_landmark <- gsub("PositivePositive", "NegativePositive", data_ct$post1m_landmark)
+
+#pdf("CT_Post1M_Landmark.pdf",width = 5,height = 6,onefile = FALSE)
+dat <- data_ct %>% select(PatientID,RFS.status,RFS,post1m_landmark)
+dat <- as.data.frame(dat)
+colnames(dat)[2:4] <- c("state","time","group")
+my.surv = Surv(dat$time, dat$state)
+group = as.factor(dat[,4])
+level1_num = levels(group)[1]
+level2_num = levels(group)[2]
+level3_num = levels(group)[3]
+survival_dat <- data.frame(group = group)
+fit <- survfit(my.surv ~ group)
+data.survdiff <- survdiff(my.surv ~ group)
+
+
+plot <- ggsurvplot(fit, data = survival_dat,
+                   conf.int = F, 
+                   linetype = c(1,1,1),
+                   palette = c(dblue,dred,dorange),
+                   legend.title = "Chemo Longitudinal",
+                   risk.table = TRUE,
+                   font.legend = 12,
+                   ylab='RFS probability',
+                   xlab='Time in months',
+                   risk.table.y.text = F, 
+                   legend.labs = c(level3_num,level1_num,level2_num))
+print(plot)
+#dev.off()
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
