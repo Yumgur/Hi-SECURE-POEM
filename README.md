@@ -5,6 +5,7 @@ This is for generating the main figures of the POEM project article. It includes
 
 ## Environment Setup and Installation
 ### 1. **R Environment**
+- **System Requirements:** No special restrictions
 - **Required Version:** R 4.0.0 or higher.
 - **Required R Packages:**
   - ggplot2
@@ -17,8 +18,9 @@ This is for generating the main figures of the POEM project article. It includes
   ```R
   install.packages(c("ggplot2", "dplyr", "readxl", "ComplexHeatmap","survival","survminer"))
   ```
-
+- **Installation time:** Vary depending on the specific configuration of the machine and the speed of the internet connection.Approximately 5 to 15 minutes.
 ### 2. **Python Environment**
+- **System Requirements:** No special restrictions
 - **Required Version:** Python 3.6 or higher.
 - **Required Python Libraries:**
   - matplotlib
@@ -29,7 +31,7 @@ This is for generating the main figures of the POEM project article. It includes
   ```bash
   pip install pandas matplotlib seaborn numpy scipy
   ```
-
+- **Installation time:** Vary depending on the specific configuration of the machine and the speed of the internet connection.Approximately 10 to 30 minutes.
 ---
 
 ## Data Path
